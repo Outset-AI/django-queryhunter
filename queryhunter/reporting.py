@@ -97,8 +97,6 @@ class RaisingQueryHunterReporter(QueryHunterReporter):
     def report(self):
         for name, module in self.query_info.items():
             for line in module.lines:
-                if line.duration < self.options.duration_threshold or line.count < self.options.count_threshold:
-                    continue
                 if line.duration >= self.options.duration_threshold:
                     raise QueryHunterException(f'Excessive time spent in module: {name} | {line}')
                 elif line.count >= self.options.count_threshold:
