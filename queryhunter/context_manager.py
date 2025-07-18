@@ -3,12 +3,12 @@ import contextlib
 from django.conf import settings
 from django.db import connection
 
-from .queryhunter import QueryHunter
+from .queryhunter import LineGrouping, QueryHunter
 from queryhunter.reporting import ReportingOptions, QueryHunterReporter, PrintingOptions
 
 
 class queryhunter(contextlib.ContextDecorator):
-    def __init__(self, reporting_options: ReportingOptions = None, meta_data: dict[str, str] = None):
+    def __init__(self, reporting_options: ReportingOptions = None, meta_data: dict[str, str] = None, line_grouping: LineGrouping | None = None):
         if not hasattr(settings, 'QUERYHUNTER_BASE_DIR'):
             raise ValueError('QUERYHUNTER_BASE_DIR setting is required')
 
@@ -21,7 +21,13 @@ class queryhunter(contextlib.ContextDecorator):
         else:
             self._reporting_options = reporting_options
 
-        self._query_hunter = QueryHunter(reporting_options=self._reporting_options, meta_data=self.meta_data)
+        if line_grouping is None:
+            try:
+                line_grouping = settings.QUERYHUNTER_LINE_GROUPING
+            except AttributeError:
+                line_grouping = LineGrouping.LINE_NO
+
+        self._query_hunter = QueryHunter(reporting_options=self._reporting_options, meta_data=self.meta_data, line_grouping=line_grouping)
         self.query_info = self._query_hunter.query_info
         self.reporter = QueryHunterReporter.create(queryhunter=self._query_hunter)
         self._pre_execute_hook = connection.execute_wrapper(self._query_hunter)

@@ -4,6 +4,7 @@ import linecache
 import os
 import time
 import traceback
+import enum
 from dataclasses import dataclass
 from typing import TYPE_CHECKING, Optional
 
@@ -46,11 +47,17 @@ class Module:
         return data
 
 
+class LineGrouping(enum.StrEnum):
+    LINE_NO = "line_no"
+    LINE_NO_AND_QUERY = "line_no_and_query"
+
+
 class QueryHunter:
-    def __init__(self, reporting_options: ReportingOptions, meta_data: dict[str, str] = None):
+    def __init__(self, reporting_options: ReportingOptions, meta_data: dict[str, str] = None, line_grouping: LineGrouping | None = None):
         self.reporting_options = reporting_options
         self.query_info: dict[str, Module] = {}
         self.meta_data = meta_data
+        self.line_grouping = line_grouping or LineGrouping.LINE_NO
 
     def __call__(self, execute, sql, params, many, context):
         # Capture traceback at the point of SQL execution
@@ -85,7 +92,7 @@ class QueryHunter:
                 reportable_sql = sql
 
             try:
-                line = next(line for line in module.lines if line.line_no == line_no)
+                line = self.find_matching_line(module.lines, self.line_grouping, line_no, reportable_sql)
             except StopIteration:
                 line = Line(
                     line_no=line_no,
@@ -123,3 +130,21 @@ class QueryHunter:
     @staticmethod
     def get_code_from_line(filename: str, lineno: int) -> str:
         return linecache.getline(filename, lineno).strip()
+
+    @staticmethod
+    def find_matching_line(
+        lines: list[Line],
+        line_grouping: LineGrouping,
+        line_no: int | None,
+        sql: str,
+    ) -> Line:
+        """
+        Raises a StopIteration upon failure to find a matching line.
+        """
+        match line_grouping:
+            case LineGrouping.LINE_NO:
+                return next(line for line in lines if line.line_no == line_no)
+            case LineGrouping.LINE_NO_AND_QUERY:
+                return next(line for line in lines if line.line_no == line_no and line.sql == sql)
+            case _:
+                raise ValueError(f'Unrecognized line_grouping value: "{line_grouping}"')
