@@ -109,9 +109,9 @@ class RaisingQueryHunterReporter(QueryHunterReporter):
 
     def format(self, line: Line) -> str:
         string = (
-            f'cnt:{self.count} code:{self.code} sql:{self.sql} dur:{self.duration}'
+            f'cnt:{line.count} code:{line.code} sql:{line.sql} dur:{line.duration}'
         )
-        if self.meta_data:
-            for key, value in self.meta_data.items():
+        if line.meta_data:
+            for key, value in line.meta_data.items():
                 string += f' {key}:{value}'
         return string
