@@ -5,6 +5,7 @@ from dataclasses import dataclass
 from typing import Optional
 
 from queryhunter.queryhunter import QueryHunter
+from django.conf import settings
 
 SORT_BY_OPTIONS = ['line_no', '-line_no', 'count', '-count', 'duration', '-duration']
 
@@ -95,9 +96,13 @@ class LoggingQueryHunterReporter(QueryHunterReporter):
 
 class RaisingQueryHunterReporter(QueryHunterReporter):
     def report(self):
+        whitelist = getattr(settings, 'QUERYHUNTER_WHITELIST', [])
         for name, module in self.query_info.items():
             for line in module.lines:
+                name_lineno = f"{name}:{line.line_no}"
+                if name_lineno in whitelist:
+                    continue
                 if line.duration >= self.options.duration_threshold:
-                    raise QueryHunterException(f'Excessive time spent in module: {name} | {line}')
+                    raise QueryHunterException(f'Excessive time spent in module: {name_lineno} | {line}')
                 elif line.count >= self.options.count_threshold:
-                    raise QueryHunterException(f'Excessive repeated queries in module: {name} | {line}')
+                    raise QueryHunterException(f'Excessive repeated queries in module: {name_lineno} | {line}')
