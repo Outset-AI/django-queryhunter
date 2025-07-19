@@ -4,7 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from queryhunter.queryhunter import QueryHunter
+from queryhunter.queryhunter import Line, QueryHunter
 from django.conf import settings
 
 SORT_BY_OPTIONS = ['line_no', '-line_no', 'count', '-count', 'duration', '-duration']
@@ -103,6 +103,15 @@ class RaisingQueryHunterReporter(QueryHunterReporter):
                 if name_lineno in whitelist:
                     continue
                 if line.duration >= self.options.duration_threshold:
-                    raise QueryHunterException(f'Excessive time spent in module: {name_lineno} | {line}')
+                    raise QueryHunterException(f'Excessive time spent in module: {name_lineno} | {self.format(line)}')
                 elif line.count >= self.options.count_threshold:
-                    raise QueryHunterException(f'Excessive repeated queries in module: {name_lineno} | {line}')
+                    raise QueryHunterException(f'Excessive repeated queries in module: {name_lineno} | {self.format(line)}')
+
+    def format(self, line: Line) -> str:
+        string = (
+            f'cnt:{self.count} code:{self.code} sql:{self.sql} dur:{self.duration}'
+        )
+        if self.meta_data:
+            for key, value in self.meta_data.items():
+                string += f' {key}:{value}'
+        return string
