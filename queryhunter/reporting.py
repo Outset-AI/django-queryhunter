@@ -4,8 +4,7 @@ import logging
 from dataclasses import dataclass
 from typing import Optional
 
-from queryhunter.queryhunter import Line, QueryHunter
-from django.conf import settings
+from queryhunter.queryhunter import QueryHunter
 
 SORT_BY_OPTIONS = ['line_no', '-line_no', 'count', '-count', 'duration', '-duration']
 
@@ -40,6 +39,13 @@ class RaisingOptions(ReportingOptions):
     duration_threshold: float = 0.5
 
 
+@dataclass
+class CustomReporterOptions(ReportingOptions):
+    count_threshold: int = 5
+    duration_threshold: float = 0.5
+    reporter: QueryHunterReporter
+
+
 class QueryHunterException(Exception):
     pass
 
@@ -50,10 +56,13 @@ class QueryHunterReporter:
         self.query_info = query_hunter.query_info
         self.options = query_hunter.reporting_options
 
+    def reporter(self):
+        pass
+
     @classmethod
     def create(
         cls, queryhunter: QueryHunter
-    ) -> PrintingQueryHunterReporter | LoggingQueryHunterReporter | RaisingQueryHunterReporter:
+    ) -> PrintingQueryHunterReporter | LoggingQueryHunterReporter | RaisingQueryHunterReporter | CustomReporterOptions:
         reporting_options = queryhunter.reporting_options
         if isinstance(reporting_options, PrintingOptions):
             return PrintingQueryHunterReporter(queryhunter)
@@ -61,6 +70,8 @@ class QueryHunterReporter:
             return LoggingQueryHunterReporter(queryhunter)
         elif isinstance(reporting_options, RaisingOptions):
             return RaisingQueryHunterReporter(queryhunter)
+        elif isinstance(reporting_options, CustomReporterOptions):
+            return reporting_options.reporter(queryhunter)
 
 
 class PrintingQueryHunterReporter(QueryHunterReporter):
@@ -96,22 +107,9 @@ class LoggingQueryHunterReporter(QueryHunterReporter):
 
 class RaisingQueryHunterReporter(QueryHunterReporter):
     def report(self):
-        whitelist = getattr(settings, 'QUERYHUNTER_WHITELIST', [])
         for name, module in self.query_info.items():
             for line in module.lines:
-                name_lineno = f"{name}:{line.line_no}"
-                if name_lineno in whitelist:
-                    continue
                 if line.duration >= self.options.duration_threshold:
-                    raise QueryHunterException(f'Excessive time spent in module: {name_lineno} | {self.format(line)}')
+                    raise QueryHunterException(f'Excessive time spent in module: {name} | {line}')
                 elif line.count >= self.options.count_threshold:
-                    raise QueryHunterException(f'Excessive repeated queries in module: {name_lineno} | {self.format(line)}')
-
-    def format(self, line: Line) -> str:
-        string = (
-            f'cnt:{line.count} code:{line.code} sql:{line.sql} dur:{line.duration}'
-        )
-        if line.meta_data:
-            for key, value in line.meta_data.items():
-                string += f' {key}:{value}'
-        return string
+                    raise QueryHunterException(f'Excessive repeated queries in module: {name} | {line}')
