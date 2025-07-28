@@ -7,6 +7,7 @@ from .reporting import (
     QueryHunterException,
     RaisingOptions,
     ReportingOptions,
+    CustomReporterOptions,
     QueryHunterReporter,
 )
 from .queryhunter import Line
