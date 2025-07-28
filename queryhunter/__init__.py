@@ -7,6 +7,7 @@ from .reporting import (
     QueryHunterException,
     RaisingOptions,
     ReportingOptions,
+    QueryHunterReporter,
 )
 from .queryhunter import Line
 
@@ -22,6 +23,7 @@ __all__ = [
     "RaisingOptions",
     "ReportingOptions",
     "CustomReporterOptions",
+    "QueryHunterReporter",
     "Line",
     "QueryHunterException",
     "default_base_dir",
