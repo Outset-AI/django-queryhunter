@@ -8,6 +8,7 @@ from .reporting import (
     RaisingOptions,
     ReportingOptions,
 )
+from .queryhunter import Line
 
 
 def default_base_dir(file) -> str:
@@ -20,6 +21,8 @@ __all__ = [
     "PrintingOptions",
     "RaisingOptions",
     "ReportingOptions",
+    "CustomReporterOptions",
+    "Line",
     "QueryHunterException",
     "default_base_dir",
 ]

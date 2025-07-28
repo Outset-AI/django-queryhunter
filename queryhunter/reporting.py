@@ -43,7 +43,11 @@ class RaisingOptions(ReportingOptions):
 class CustomReporterOptions(ReportingOptions):
     count_threshold: int = 5
     duration_threshold: float = 0.5
-    reporter: QueryHunterReporter
+    
+    def __init__(self, count_threshold:int, duration_threshold:float, reporter: QueryHunterReporter):
+        super().__init__(count_threshold=count_threshold, duration_threshold=duration_threshold)
+        self.reporter = reporter
+        
 
 
 class QueryHunterException(Exception):
