@@ -125,7 +125,7 @@ class QueryHunter:
                 "QUERYHUNTER_BASE_DIR not set in settings. "
                 "Define manually or use the built in queryhunter.default_base_dir function",
             )
-        return filename.startswith(base_dir)
+        return filename.startswith(base_dir) and ".venv" not in filename
 
     @staticmethod
     def get_code_from_line(filename: str, lineno: int) -> str:
